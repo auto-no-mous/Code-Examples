@@ -1,4 +1,4 @@
-﻿/*Дана строка, состоящая из слов, разделенных пробелами, и знаками пунктуации. Сформировать новую строку со следующими свойствами:
+/*Дана строка, состоящая из слов, разделенных пробелами, и знаками пунктуации. Сформировать новую строку со следующими свойствами:
 
 а) все слова в нижнем регистре, кроме первой буквы первого слова предложения;
 б) все ссылки в словах заменяются на "[ссылка удалена]";
@@ -18,6 +18,8 @@ https://optikacrystal.ru
 [ссылка удалена]
 У нас вы можете заказать контактные линзы, растворы и капли по доступным ценам. Тел. +7 (***) -****. Все в наличии.
 По вопросам оптовых закупок: [контакты запрещены]
+
+Примечание: при отладке программы, используйте сочетание Ctrl + Z, чтобы ввести символ EOF (конец файла). Таким образом удастся закончить ввод данных.
  */
 
 using System;
@@ -32,62 +34,80 @@ namespace TextFilter
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Входные данные: \n");
+            Console.Write("Введите текст:");
             string s = Console.In.ReadToEnd();
-            Console.WriteLine("\n");
-            Console.WriteLine("Выходные данные: \n");
-
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(MainFilter(s));
             Console.ReadKey();
         }
 
-        static string MainFilter (string s)
+        static string MainFilter(string s)
         {
-            string[] words = s.Split(' ');
+            string[] words = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             words = Capitalize(words);
-            words = RemoveRef(words);
+            words = RemoveRefs(words);
+
             return String.Join(' ', words);
         }
 
-        static string[] Capitalize (string[] words)
+        static string[] Capitalize(string[] words)
         {
             bool newSentence = true;
-            for (int i = 0; i< words.Length; i++)
+            for (int i = 0; i < words.Length; i++)
             {
-                if (newSentence)
+                if (!newSentence)
                 {
-                    words[i] = Char.ToUpper(words[i][0]) + words[i].Substring(1).ToLower();
-                    newSentence = false;
+                    words[i] = words[i].ToLower();
                 }
                 else
                 {
                     words[i] = words[i].ToLower();
+                    words[i] = Char.ToUpper(words[i][0]) + words[i].Substring(1);
+                    newSentence = false;
                 }
-                if (words[i].Contains(".")&&!IsReference(words[i]))
+                if (words[i].Contains('\n'))
+                {
+                    int pos = words[i].IndexOf('\n');
+                    while (pos!=-1 && !Char.IsLetter(words[i][pos]) && pos<words[i].Length-1)
+                        pos++;
+                    if (pos!=-1 && pos<words[i].Length)
+                    {
+                        char [] ch = words[i].ToCharArray();
+                        ch[pos] = Char.ToUpper(ch[pos]);
+                        words[i] = new string(ch);
+                    }
+                }
+                else if  (words[i].Contains(".") && !IsReference(words[i]))
                     newSentence = true;
             }
             return words;
         }
 
-        static bool IsReference (string s)
+        static bool IsReference(string s)
         {
             if (s.ToLower().Contains("http") && s.Contains("."))
+            {
                 return true;
-            else return false;
+            }
+            else
+                return false;
         }
 
-        static string [] RemoveRef (string [] words)
+        static string[] RemoveRefs(string[] words)
         {
             for (int i = 0; i < words.Length; i++)
             {
                 if (IsReference(words[i]))
                 {
-                    string[] deepSpit = words[i].Split('\r', '\n', '(', ')', ';');
-                    for (int j = 0; j<deepSpit.Length; j++)
+                    string[] deepSplit = words[i].Split(',', ';', '(', ')', '\r', '\n');
+                    for (int j = 0; j < deepSplit.Length; j++)
                     {
-                        if (IsReference(deepSpit[j]))
-                            words[i] = words[i].Replace(deepSpit[j], "[ссылка удалена]");
+                        if (deepSplit[j].ToLower().Contains("http"))
+                        {
+                            words[i] = words[i].Replace(deepSplit[j], "[ссылка удалена]");
+                        }
                     }
+
                 }
             }
             return words;
