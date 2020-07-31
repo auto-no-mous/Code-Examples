@@ -68,16 +68,16 @@ namespace TextFilter
                 if (words[i].Contains('\n'))
                 {
                     int pos = words[i].IndexOf('\n');
-                    while (pos!=-1 && !Char.IsLetter(words[i][pos]) && pos<words[i].Length-1)
+                    while (pos != -1 && !Char.IsLetter(words[i][pos]) && pos < words[i].Length - 1)
                         pos++;
-                    if (pos!=-1 && pos<words[i].Length)
+                    if (pos != -1 && pos < words[i].Length)
                     {
-                        char [] ch = words[i].ToCharArray();
+                        char[] ch = words[i].ToCharArray();
                         ch[pos] = Char.ToUpper(ch[pos]);
                         words[i] = new string(ch);
                     }
                 }
-                else if  (words[i].Contains(".") && !IsReference(words[i]))
+                else if (words[i].Contains(".") && !IsReference(words[i]) && !IsEmail(words[i]))
                     newSentence = true;
             }
             return words;
@@ -91,6 +91,38 @@ namespace TextFilter
             }
             else
                 return false;
+        }
+
+        static bool IsEmail(string s)
+        {
+            if (s.Contains("@") && s.Contains(".") && s[0] != '@')
+            {
+                return true;
+            }
+            else
+                return false;
+        }
+
+        static bool IsNumberOnly(string s)
+        {
+            string[] deepSplit = s.Split(',', '.', ':', ';', '=', '(', ')', '_');
+            int digits;
+            foreach (string c in deepSplit)
+            {
+                digits = 0;
+                for (int i = 0; i < c.Length; i++)
+                {
+                    if (Char.IsLetter(c[i]))
+                    {
+                        break;
+                    }
+                    else if (char.IsDigit(c[i]))
+                        digits++;
+                }
+                if (digits > 2)
+                    return true;
+            }
+            return false;
         }
 
         static string[] RemoveRefs(string[] words)
@@ -109,10 +141,25 @@ namespace TextFilter
                     }
 
                 }
+
+                else if (IsEmail(words[i]))
+                    words[i] = "[контакты запрещены]";
+
+                else if (IsNumberOnly(words[i]))
+                    words[i] = RemoveNumbers(words[i]);
             }
             return words;
         }
+
+        static string RemoveNumbers(string s)
+        {
+            char[] ch = s.ToCharArray();
+            for (int i = 0; i < ch.Length; i++)
+            {
+                if (Char.IsDigit(ch[i]))
+                    ch[i] = '*';
+            }
+            return new string(ch);
+        }
     }
-
-
 }
